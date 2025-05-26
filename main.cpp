@@ -228,41 +228,41 @@ int main() {
     string text = readFile(inputFile);
     if (text.empty()) return 1;
 
-    int method;
-    cout << "Выберите метод сжатия:\n1 - LZ77 + Huffman (аналог ZIP)\n2 - RLE\nВаш выбор: ";
+    int method = -1;
+    while (method != 0) {
+    cout << "Выберите метод сжатия:\n1 - LZ77 + Huffman (аналог ZIP)\n2 - RLE\n0 - Выход из программы\nВаш выбор: ";
     cin >> method;
 
-    if (method == 1) {
-        vector<LZ77Token> tokens = compressLZ77(text);
-        vector<unsigned char> rawData = serializeTokens(tokens);
-        compressWithHuffman(rawData, compressedFile);
-        string restoredText = decompressLZ77(tokens);
-        writeFile(decompressedFile, restoredText);
+        if (method == 1) {
+            vector<LZ77Token> tokens = compressLZ77(text);
+            vector<unsigned char> rawData = serializeTokens(tokens);
+            compressWithHuffman(rawData, compressedFile);
+            string restoredText = decompressLZ77(tokens);
+            writeFile(decompressedFile, restoredText);
 
-    } else if (method == 2) {
-        string compressed = compressRLE(text);
-        string decompressed = decompressRLE(compressed);
-        writeFile(compressedFile, compressed);
-        writeFile(decompressedFile, decompressed);
-    } else {
-        cout << "Неверный выбор.\n";
-        return 1;
+        } else if (method == 2) {
+            string compressed = compressRLE(text);
+            string decompressed = decompressRLE(compressed);
+            writeFile(compressedFile, compressed);
+            writeFile(decompressedFile, decompressed);
+        } else {
+            cout << "Конец программы.\n";
+            return 1;
+        }
+
+        long originalSize = getFileSize(inputFile);
+        long compressedSize = getFileSize(compressedFile);
+
+
+        if (originalSize > 0 && compressedSize > 0) {
+            double ratio = (double)compressedSize / originalSize;
+            cout << fixed << setprecision(2);
+            cout << "\nРазмер исходного файла: " << originalSize << " байт\n";
+            cout << "Размер сжатого файла: " << compressedSize << " байт\n";
+            cout << "Процент от первоначального файла: " << ratio * 100 << "%\n";
+            cout << "Степень сжатия: " << (100 - ratio * 100) << "% уменьшение\n";
+        } else {
+            cerr << "Ошибка при измерении размеров файлов.\n";
+        }
     }
-
-    long originalSize = getFileSize(inputFile);
-    long compressedSize = getFileSize(compressedFile);
-
-
-    if (originalSize > 0 && compressedSize > 0) {
-        double ratio = (double)compressedSize / originalSize;
-        cout << fixed << setprecision(2);
-        cout << "\nРазмер исходного файла: " << originalSize << " байт\n";
-        cout << "Размер сжатого файла: " << compressedSize << " байт\n";
-        cout << "Процент от первоначального файла: " << ratio * 100 << "%\n";
-        cout << "Степень сжатия: " << (100 - ratio * 100) << "% уменьшение\n";
-    } else {
-        cerr << "Ошибка при измерении размеров файлов.\n";
-    }
-
-    return 0;
 }
