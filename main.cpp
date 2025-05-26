@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iomanip>
+#include <commdlg.h>  // Для диалога выбора файла
 
 using namespace std;
 
@@ -62,7 +63,6 @@ string decompressLZ77(const vector<LZ77Token>& tokens) {
     return result;
 }
 
-// Хаффман
 struct HuffNode {
     unsigned char byte;
     int freq;
@@ -147,7 +147,6 @@ void compressWithHuffman(const vector<unsigned char>& inputData, const string& o
     deleteTree(root);
 }
 
-// RLE
 string compressRLE(const string& input) {
     string result;
     int n = input.size();
@@ -192,46 +191,51 @@ void writeFile(const string& filename, const string& content) {
     out.close();
 }
 
-// void generateRandomFile(const string& filename, int length = 1000) {
-//     ofstream out(filename);
-//     const string charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
-//     srand(static_cast<unsigned int>(time(0)));
-//     string generatedText;
-//
-//     for (int i = 0; i < length; ++i) {
-//         char ch = charset[rand() % charset.size()];
-//         out << ch;
-//         generatedText += ch;
-//     }
-//
-//     out.close();
-//     cout << "\nСодержимое сгенерированного файла '" << filename << "':\n";
-//     cout << generatedText << "\n\n";
-// }
-
 long getFileSize(const string& filename) {
     ifstream in(filename, ios::binary | ios::ate);
     if (!in) return -1;
     return in.tellg();
 }
 
+// ✅ Диалог выбора файла (открытие)
+string openFileDialog() {
+    char filename[MAX_PATH] = "";
+
+    OPENFILENAME ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFilter = "Text Files\0*.txt\0All Files\0*.*\0";
+    ofn.lpstrFile = filename;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+    ofn.lpstrTitle = "Выберите файл для сжатия";
+
+    if (GetOpenFileName(&ofn)) {
+        return string(filename);
+    } else {
+        cerr << "Файл не выбран.\n";
+        return "";
+    }
+}
+
 int main() {
     setlocale(LC_ALL, "ru");
     SetConsoleOutputCP(CP_UTF8);
 
-    string inputFile = "example.txt";
+    string inputFile = openFileDialog();
+    if (inputFile.empty()) return 1;
+
     string compressedFile = "compressed.txt";
     string decompressedFile = "decompressed.txt";
-
-
 
     string text = readFile(inputFile);
     if (text.empty()) return 1;
 
     int method = -1;
     while (method != 0) {
-    cout << "Выберите метод сжатия:\n1 - LZ77 + Huffman (аналог ZIP)\n2 - RLE\n0 - Выход из программы\nВаш выбор: ";
-    cin >> method;
+        cout << "Выберите метод сжатия:\n1 - LZ77 + Huffman (аналог ZIP)\n2 - RLE\n0 - Выход из программы\nВаш выбор: ";
+        cin >> method;
 
         if (method == 1) {
             vector<LZ77Token> tokens = compressLZ77(text);
@@ -245,14 +249,16 @@ int main() {
             string decompressed = decompressRLE(compressed);
             writeFile(compressedFile, compressed);
             writeFile(decompressedFile, decompressed);
-        } else {
+        } else if (method == 0) {
             cout << "Конец программы.\n";
-            return 1;
+            return 0;
+        } else {
+            cout << "Неверный выбор. Повторите.\n";
+            continue;
         }
 
         long originalSize = getFileSize(inputFile);
         long compressedSize = getFileSize(compressedFile);
-
 
         if (originalSize > 0 && compressedSize > 0) {
             double ratio = (double)compressedSize / originalSize;
@@ -260,7 +266,7 @@ int main() {
             cout << "\nРазмер исходного файла: " << originalSize << " байт\n";
             cout << "Размер сжатого файла: " << compressedSize << " байт\n";
             cout << "Процент от первоначального файла: " << ratio * 100 << "%\n";
-            cout << "Степень сжатия: " << (100 - ratio * 100) << "% уменьшение\n";
+            cout << "Степень сжатия: " << (100 - ratio * 100) << "% уменьшение\n\n";
         } else {
             cerr << "Ошибка при измерении размеров файлов.\n";
         }
