@@ -1,7 +1,7 @@
 cmake-build-debug
 compressed.myzip
 compressed.txt
-copmpressed_rle.txt
+compressed_rle.txt
 decompressed.txt
 decompressed_rle.txt
 main.exe
